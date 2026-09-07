@@ -27,6 +27,17 @@
       # machines are assembled exactly the way the distro's own test machines
       # are. A recipe copied by hand is a recipe that drifts.
       nixosConfigurations = kiwami.inputs.nixpkgs.lib.genAttrs hostNames
-        (name: kiwami.lib.mkHost [ (./hosts + "/${name}") ]);
+        (name: kiwami.lib.mkHost [ (./hosts + "/${name}") ])
+        # An installer per machine, carrying that machine's whole built
+        # system, so a reinstall needs no network. `kiwami image` builds
+        # installer-<host> from this flake, so the attribute has to exist
+        # here - the image is of my machine, and my machines live here.
+        //
+        kiwami.inputs.nixpkgs.lib.genAttrs (map (n: "installer-${n}") hostNames)
+          (imageName:
+            kiwami.lib.installerFor
+              self.nixosConfigurations.${
+                kiwami.inputs.nixpkgs.lib.removePrefix "installer-" imageName
+              });
     };
 }
