@@ -17,6 +17,11 @@
     ./disk.nix
   ];
 
+  # Short on purpose for now - long enough to look at, short enough to see it
+  # work. Raise it once the novelty wears off.
+  kiwami.wallpaper.rotate = true;
+  kiwami.wallpaper.interval = 10;
+
   kiwami.flake = "github:jimzer/kiwami-hosts";
   networking.hostName = "xps";
 
