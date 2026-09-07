@@ -93,11 +93,11 @@
         "quickshell": "quickshell"
       },
       "locked": {
-        "lastModified": 1788805298,
-        "narHash": "sha256-/MEhNKI/Oj5ro815txdE2bfxE5tGuVnJmr3r/zyPgAw=",
+        "lastModified": 1788815742,
+        "narHash": "sha256-fciVjZ6hyOo9XzJFznVhnc0xEonjNYkaUtsdPlJpcIY=",
         "owner": "kiwamios",
         "repo": "kiwami",
-        "rev": "c2cb751237299b20c3ddd929cc66946e55415307",
+        "rev": "bf7a2b0280d7fba5819102ce94447b479ef7f502",
         "type": "github"
       },
       "original": {
