@@ -114,15 +114,14 @@
         "home-manager": "home-manager",
         "impermanence": "impermanence",
         "nixpkgs": "nixpkgs_2",
-        "nvim-config": "nvim-config",
         "quickshell": "quickshell"
       },
       "locked": {
-        "lastModified": 1788964786,
-        "narHash": "sha256-V1OJPHp28AqLtQjYLuQCs2+c5rmJt8JO6uHGlwSN4Rk=",
+        "lastModified": 1788979318,
+        "narHash": "sha256-+s2tJqiNE69ya88a0/nyZz4mAnlKO2+lhDg/dcprwRk=",
         "owner": "kiwamios",
         "repo": "kiwami",
-        "rev": "6fda1d335c1a5b439473c7683d434af0ea9486d2",
+        "rev": "5368eb84c9c732ddf5268d2033595fd3b2759576",
         "type": "github"
       },
       "original": {
@@ -160,22 +159,6 @@
         "owner": "NixOS",
         "ref": "nixos-26.05",
         "repo": "nixpkgs",
-        "type": "github"
-      }
-    },
-    "nvim-config": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1788964243,
-        "narHash": "sha256-XHuncZUK27+OxkFy7k9FsEzUygUWqpV3h9odlEcCWg4=",
-        "owner": "jimzer",
-        "repo": "kickstart.nvim",
-        "rev": "0c0cd84a856dc88d8d0232e678e5e60254414bf2",
-        "type": "github"
-      },
-      "original": {
-        "owner": "jimzer",
-        "repo": "kickstart.nvim",
         "type": "github"
       }
     },
