@@ -21,6 +21,29 @@
         "type": "github"
       }
     },
+    "herdr": {
+      "inputs": {
+        "nixpkgs": [
+          "kiwami",
+          "nixpkgs"
+        ],
+        "rust-overlay": "rust-overlay"
+      },
+      "locked": {
+        "lastModified": 1788808373,
+        "narHash": "sha256-SUYF4bbaYwNgoe498VoCUzuLPcjBLQXR0o0DWjjoSnI=",
+        "owner": "herdrdev",
+        "repo": "herdr",
+        "rev": "b99002ac99b09e00b4ca692436cb15a6b0d676f1",
+        "type": "github"
+      },
+      "original": {
+        "owner": "herdrdev",
+        "ref": "v0.9.0",
+        "repo": "herdr",
+        "type": "github"
+      }
+    },
     "home-manager": {
       "inputs": {
         "nixpkgs": [
@@ -87,17 +110,19 @@
     "kiwami": {
       "inputs": {
         "disko": "disko",
+        "herdr": "herdr",
         "home-manager": "home-manager",
         "impermanence": "impermanence",
         "nixpkgs": "nixpkgs_2",
+        "nvim-config": "nvim-config",
         "quickshell": "quickshell"
       },
       "locked": {
-        "lastModified": 1788944195,
-        "narHash": "sha256-wALyRfe6t4P5D6Q+T00snuNCP/bDFBH5BF9AVaAeUws=",
+        "lastModified": 1788964786,
+        "narHash": "sha256-V1OJPHp28AqLtQjYLuQCs2+c5rmJt8JO6uHGlwSN4Rk=",
         "owner": "kiwamios",
         "repo": "kiwami",
-        "rev": "baa00df9d83515e892edcf40cda73f1a728cd21d",
+        "rev": "6fda1d335c1a5b439473c7683d434af0ea9486d2",
         "type": "github"
       },
       "original": {
@@ -138,6 +163,22 @@
         "type": "github"
       }
     },
+    "nvim-config": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1788964243,
+        "narHash": "sha256-XHuncZUK27+OxkFy7k9FsEzUygUWqpV3h9odlEcCWg4=",
+        "owner": "jimzer",
+        "repo": "kickstart.nvim",
+        "rev": "0c0cd84a856dc88d8d0232e678e5e60254414bf2",
+        "type": "github"
+      },
+      "original": {
+        "owner": "jimzer",
+        "repo": "kickstart.nvim",
+        "type": "github"
+      }
+    },
     "quickshell": {
       "inputs": {
         "nixpkgs": [
@@ -162,6 +203,28 @@
     "root": {
       "inputs": {
         "kiwami": "kiwami"
+      }
+    },
+    "rust-overlay": {
+      "inputs": {
+        "nixpkgs": [
+          "kiwami",
+          "herdr",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1783577481,
+        "narHash": "sha256-EWMxOWrJ031f8f/lrcEmhTRs4npw1/5N3Hcjin846c8=",
+        "owner": "oxalica",
+        "repo": "rust-overlay",
+        "rev": "4cdea398dc491b082dccdce0fad1ed0b75fa3394",
+        "type": "github"
+      },
+      "original": {
+        "owner": "oxalica",
+        "repo": "rust-overlay",
+        "type": "github"
       }
     }
   },
