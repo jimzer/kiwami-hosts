@@ -5,7 +5,7 @@
 #
 # hardware.nix beside this file is the facts half, detected at install time.
 # Regenerate it with `kiwami doctor` if this machine's hardware changes.
-{ ... }:
+{ config, ... }:
 
 {
   imports = [
@@ -53,6 +53,42 @@
   # default and `kiwami passwd` replaces. Setting initialPassword as well is a
   # conflict Nix only warns about, and the file wins - so the line would look
   # like it set the password while doing nothing.
+
+  # The GTX 1080 Ti.
+  #
+  # Pascal, which NVIDIA stopped supporting after the 580 branch: 590 and
+  # later drop it, so legacy_580 is the last one that drives this card. It is
+  # a first-class attribute in nixpkgs, not a pin to some URL, and it builds
+  # against the kernel this machine runs - verified rather than assumed, which
+  # is why there is no kernel pin here.
+  #
+  # When a future kernel does break it, the failure is a build error at
+  # `kiwami update`, before anything switches. The running system is untouched
+  # and the fix is to pin boot.kernelPackages then. A pin now would cost new
+  # kernels for years to avoid a problem that announces itself loudly.
+  hardware.nvidia = {
+    package = config.boot.kernelPackages.nvidiaPackages.legacy_580;
+
+    # Required on Wayland, and Kiwami is Hyprland.
+    modesetting.enable = true;
+
+    # The open kernel module needs Turing or newer. Pascal predates it, so
+    # this must stay false - true builds and then fails to drive the card.
+    open = false;
+  };
+  services.xserver.videoDrivers = [ "nvidia" ];
+
+  # The driver is unfree, and so is Steam below it.
+  nixpkgs.config.allowUnfree = true;
+
+  # Steam, and the 32-bit graphics libraries Proton needs.
+  #
+  # enable32Bit is the line everyone forgets: without it games fail to launch
+  # with errors that never mention the missing libraries. Pascal does Vulkan
+  # 1.3, which is what DXVK and VKD3D want - no ray tracing or DLSS, since the
+  # hardware has neither.
+  programs.steam.enable = true;
+  hardware.graphics.enable32Bit = true;
 
   # When this machine was installed. Kiwami applies the desktop user's home
   # configuration itself; this is the one part of it that belongs to the
