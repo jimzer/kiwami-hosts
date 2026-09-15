@@ -103,6 +103,31 @@
   };
   hardware.graphics.enable32Bit = true;
 
+  # gamescope: a micro-compositor that runs one game inside its own display.
+  #
+  # The game renders into a private virtual output and gamescope presents
+  # that to the real one, so the game never negotiates directly with
+  # Hyprland. On NVIDIA that is the usual answer to a fullscreen window that
+  # flickers or fights the compositor - Doom Eternal did both here.
+  #
+  # Per-game, via Steam launch options, rather than globally:
+  #   gamescope -W 3440 -H 1440 -r 144 -f -- %command%
+  programs.gamescope.enable = true;
+
+  # What the NVIDIA driver wants said out loud on Wayland.
+  #
+  # The session had none of these set. They are the set Hyprland's own NVIDIA
+  # notes call for: which GBM backend to use, which GLX vendor for anything
+  # going through Xwayland, and the video-acceleration driver and its
+  # backend. Defaults work often enough that their absence shows up as
+  # something odd under load rather than as a failure to start.
+  environment.sessionVariables = {
+    GBM_BACKEND = "nvidia-drm";
+    __GLX_VENDOR_LIBRARY_NAME = "nvidia";
+    LIBVA_DRIVER_NAME = "nvidia";
+    NVD_BACKEND = "direct";
+  };
+
   # What Steam writes about itself.
   #
   # The client in the store is a launcher and an FHS environment; the real
