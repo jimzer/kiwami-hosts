@@ -5,7 +5,7 @@
 #
 # hardware.nix beside this file is the facts half, detected at install time.
 # Regenerate it with `kiwami doctor` if this machine's hardware changes.
-{ config, ... }:
+{ config, pkgs, ... }:
 
 {
   imports = [
@@ -87,8 +87,74 @@
   # with errors that never mention the missing libraries. Pascal does Vulkan
   # 1.3, which is what DXVK and VKD3D want - no ray tracing or DLSS, since the
   # hardware has neither.
-  programs.steam.enable = true;
+  programs.steam = {
+    enable = true;
+
+    # GE-Proton alongside Valve's builds. It carries the media codecs and
+    # per-game patches Valve cannot ship, and it is the first thing to switch
+    # a stubborn title to - selected per game under Compatibility, so having
+    # it installed costs nothing until it is wanted.
+    extraCompatPackages = [ pkgs.proton-ge-bin ];
+
+    # Streaming to another device, and moving an installed game over the LAN
+    # instead of downloading it twice.
+    remotePlay.openFirewall = true;
+    localNetworkGameTransfers.openFirewall = true;
+  };
   hardware.graphics.enable32Bit = true;
+
+  # One setting that cannot be made here: Steam Play for titles without
+  # native builds is a checkbox in the client, under Settings ->
+  # Compatibility -> "Enable Steam Play for all other titles". It lives in
+  # Steam's own config, not in Nix, and nothing installed above turns it on.
+
+  # Where games go.
+  #
+  # Two libraries because the disks differ and the difference is worth
+  # keeping: /games is a subvolume of the root filesystem on the Samsung 850
+  # EVO, which has a DRAM cache; /games2 is the SanDisk SSD Plus, which is
+  # DRAM-less and slower at sustained writes. Unifying them - one btrfs
+  # spanning both - would pool the capacity and lose the ability to say which
+  # disk a game is on, which is the only reason to have two.
+  #
+  # Steam handles several library folders natively, and "Move install folder"
+  # under a game's Installed Files shifts one between them without
+  # re-downloading. /stash is the 10TB, for what does not need to be fast.
+  #
+  # By label, not by /dev/sdX: the kernel names on this machine shifted
+  # between two boots - the Samsung was sda at install time and sdb an hour
+  # later - so a layout written in terms of sdX would have formatted the
+  # system disk.
+  fileSystems."/games" = {
+    device = "/dev/mapper/cryptroot";
+    fsType = "btrfs";
+    options = [ "subvol=@games" "compress=zstd" "noatime" ];
+  };
+
+  fileSystems."/games2" = {
+    device = "/dev/disk/by-label/games2";
+    fsType = "ext4";
+    options = [ "noatime" "nofail" ];
+  };
+
+  fileSystems."/stash" = {
+    device = "/dev/disk/by-label/stash";
+    fsType = "ext4";
+    options = [ "noatime" "nofail" ];
+  };
+
+  # nofail on the two data disks and not on /games: the root filesystem is
+  # already required to boot, while a missing games disk should not drop the
+  # machine into emergency mode over something re-downloadable.
+
+  # The mounts belong to root until told otherwise, and Steam writes as the
+  # user. Done with tmpfiles rather than by hand so it survives a reformat
+  # and is true on a machine rebuilt from this file alone.
+  systemd.tmpfiles.rules = [
+    "d /games  0755 ${config.kiwami.user} users - -"
+    "d /games2 0755 ${config.kiwami.user} users - -"
+    "d /stash  0755 ${config.kiwami.user} users - -"
+  ];
 
   # When this machine was installed. Kiwami applies the desktop user's home
   # configuration itself; this is the one part of it that belongs to the
