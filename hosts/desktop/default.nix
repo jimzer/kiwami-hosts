@@ -103,6 +103,24 @@
   };
   hardware.graphics.enable32Bit = true;
 
+  # What Steam writes about itself.
+  #
+  # The client in the store is a launcher and an FHS environment; the real
+  # Steam downloads and updates itself into the home directory, the way it
+  # does on every distro. That is not a packaging shortcut, it is how Steam
+  # works - so unlike neovim, whose plugins moved into Nix precisely to stop
+  # it fetching things at runtime, this genuinely is mutable state and has to
+  # be kept.
+  #
+  # 2.5G of it, holding the login, the client itself, and the list of library
+  # folders - which is what knows that games live on /games. Without this an
+  # ephemeral root discards all three at the next boot: the installed games
+  # survive on their own filesystems and Steam no longer knows they are there.
+  kiwami.persist.userDirectories = [
+    ".local/share/Steam"
+    ".steam"
+  ];
+
   # One setting that cannot be made here: Steam Play for titles without
   # native builds is a checkbox in the client, under Settings ->
   # Compatibility -> "Enable Steam Play for all other titles". It lives in
