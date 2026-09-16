@@ -5,7 +5,20 @@
 #
 # hardware.nix beside this file is the facts half, detected at install time.
 # Regenerate it with `kiwami doctor` if this machine's hardware changes.
-{ config, pkgs, ... }:
+{ config, pkgs, lib, ... }:
+
+let
+  # Steam in Big Picture, with gamescope driving the display directly.
+  #
+  # --steam tells gamescope it is hosting Steam, which is what makes quitting
+  # Steam end the session rather than leave an empty compositor. -e is Steam's
+  # own flag for that side of the same arrangement.
+  steamSession = pkgs.writeShellScriptBin "kiwami-steam-session" ''
+    exec ${pkgs.gamescope}/bin/gamescope \
+      --steam -W 3440 -H 1440 -r 144 -f \
+      -- ${config.programs.steam.package}/bin/steam -gamepadui -steamos3
+  '';
+in
 
 {
   imports = [
@@ -120,6 +133,36 @@
       scale = 1,
     }
   '';
+
+  # A Steam session, picked at the greeter.
+  #
+  # The difference from launching a game with gamescope in its launch
+  # options: there, gamescope is nested inside Hyprland, so every input event
+  # crosses two compositors before reaching the game. That showed up as the
+  # frame counter stalling whenever the mouse moved while the game itself ran
+  # at 150fps - pointer events, never keyboard ones.
+  #
+  # Here gamescope *is* the compositor, on the DRM output, with nothing else
+  # in the path. It is the configuration Valve ships on the Steam Deck and so
+  # the best-tested one that exists for this.
+  #
+  # Quitting Steam ends the session and returns to the greeter, where
+  # Hyprland is waiting. Written by hand rather than with
+  # programs.steam.gamescopeSession because the arguments matter on this
+  # machine - an ultrawide at 144Hz that nothing auto-detects - and because
+  # that module registers its session through the option Kiwami overrides.
+  kiwami.extraSessions = [
+    # The outer parens matter: inside a list, `a b` is two elements rather
+    # than a function applied to an argument, so without them this is the
+    # derivation and the override function offered as separate sessions.
+    ((pkgs.writeTextDir "share/wayland-sessions/steam.desktop" ''
+      [Desktop Entry]
+      Name=Steam
+      Comment=Big Picture, with gamescope as the compositor
+      Exec=${steamSession}/bin/kiwami-steam-session
+      Type=Application
+    '').overrideAttrs (_: { passthru.providedSessions = [ "steam" ]; }))
+  ];
 
   # gamescope: a micro-compositor that runs one game inside its own display.
   #
