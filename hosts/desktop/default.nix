@@ -176,6 +176,29 @@ in
   #
   # Per-game, via Steam launch options, rather than globally:
   #   gamescope -W 3440 -H 1440 -r 144 -f -- %command%
+  # Ryzen 1000 and its deep sleep states.
+  #
+  # This machine hard-locked once with nothing in the journal - no Xid, no
+  # oops, the log simply stops - and games drop frames whenever the mouse
+  # moves while keyboard input stays smooth. Both are symptoms of the
+  # documented Zen 1 C6 problem: the first-generation Ryzen parts handle deep
+  # C-states badly under Linux, freezing at idle and paying a large latency
+  # cost on wake.
+  #
+  # That fits the stutter better than anything else tried. Mouse motion wakes
+  # cores constantly; a desktop that coalesces input never notices, a game
+  # with a 6.9ms frame budget drops a frame. It also explains why cutting the
+  # report rate from 1000Hz to 250 changed nothing - the cost is per wake,
+  # and the cores still idle between frames.
+  #
+  # The vendor fix is BIOS: Power Supply Idle Control -> Typical Current
+  # Idle. This is the same thing from the kernel side, and costs some idle
+  # power - which is the trade for a machine that stays up.
+  boot.kernelParams = [
+    "processor.max_cstate=1"
+    "idle=nomwait"
+  ];
+
   # For setting the mouse's own report rate.
   #
   # The G502 runs at 1000Hz, and a game reads every one of those reports on
