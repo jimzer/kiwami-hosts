@@ -272,6 +272,21 @@ in
   kiwami.persist.userDirectories = [
     ".local/share/Steam"
     ".steam"
+
+    # The GPU's compiled shaders.
+    #
+    # ~/.cache is meant to die with a boot and almost all of it should. This
+    # is the exception: the driver compiles shaders on demand the first time
+    # a view needs them, and that compilation is the stutter people describe
+    # as "high fps but it hitches". Steam's own shadercache is kept because
+    # it happens to live under .local/share/Steam; the driver's sits in
+    # ~/.cache and was being thrown away at every boot, so every session
+    # started by recompiling everything the game drew.
+    #
+    # Only these two directories, not ~/.cache wholesale - the rest of it is
+    # exactly what an ephemeral root is for.
+    ".cache/nvidia"
+    ".cache/mesa_shader_cache"
   ];
 
   # One setting that cannot be made here: Steam Play for titles without
