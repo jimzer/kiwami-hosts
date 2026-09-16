@@ -14,10 +14,18 @@ let
   # Steam end the session rather than leave an empty compositor. -e is Steam's
   # own flag for that side of the same arrangement.
   steamSession = pkgs.writeShellScriptBin "kiwami-steam-session" ''
-    # The wrapper, not the store path: capSysNice attaches the capability
-    # to /run/wrappers/bin/gamescope, and calling the store binary directly
-    # gets the uncapped one and the warning above.
-    exec /run/wrappers/bin/gamescope \
+    # The store path, not /run/wrappers/bin/gamescope.
+    #
+    # capSysNice was enabled here and the session stopped starting: gamescope
+    # segfaulted in Vulkan device setup and greetd put the greeter back. A
+    # setcap binary runs with AT_SECURE, so the dynamic linker drops the
+    # environment NixOS uses to point programs at the NVIDIA driver, and
+    # gamescope dies looking for it.
+    #
+    # The trade is the warning it prints at startup - regular-priority
+    # compositing threads instead of real-time ones - which is a performance
+    # note rather than a session that does not start.
+    exec ${pkgs.gamescope}/bin/gamescope \
       --steam -W 3440 -H 1440 -r 144 -f \
       -- ${config.programs.steam.package}/bin/steam -gamepadui -steamos3
   '';
@@ -220,16 +228,18 @@ in
   programs.gamescope = {
     enable = true;
 
-    # gamescope says so itself on startup when this is missing:
+    # Off, and it has been tried.
     #
-    #   No CAP_SYS_NICE, falling back to regular-priority compute and
-    #   threads. Performance will be affected.
+    # gamescope asks for CAP_SYS_NICE on startup so it can put its
+    # compositing threads at real-time priority. Granting it means running
+    # the setcap wrapper, and that binary starts with AT_SECURE set - the
+    # dynamic linker then ignores the environment that points at the NVIDIA
+    # driver, gamescope segfaults setting up its Vulkan device, and the
+    # session drops straight back to the greeter.
     #
-    # It wants to renice its own compositing threads above everything else on
-    # the machine, which is rather the point of a compositor built for games.
-    # The capability arrives via a setcap wrapper, so the binary to run is
-    # /run/wrappers/bin/gamescope and not the store path.
-    capSysNice = true;
+    # So this stays false on this machine. It is a performance warning
+    # against a session that does not start.
+    capSysNice = false;
   };
 
   # What the NVIDIA driver wants said out loud on Wayland.
