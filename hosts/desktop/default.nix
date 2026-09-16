@@ -176,6 +176,24 @@ in
   #
   # Per-game, via Steam launch options, rather than globally:
   #   gamescope -W 3440 -H 1440 -r 144 -f -- %command%
+  # For setting the mouse's own report rate.
+  #
+  # The G502 runs at 1000Hz, and a game reads every one of those reports on
+  # its main thread while a compositor coalesces them to one a frame - which
+  # is why moving the mouse costs frames in Doom and nothing on the desktop.
+  # It is a known gamescope-era complaint and lowering the rate is the known
+  # answer.
+  #
+  # usbhid.mousepoll cannot do it here: that parameter only applies to
+  # devices the driver classifies as a plain USB mouse, and the G502
+  # enumerates as a composite device with a keyboard interface, so it is
+  # ignored - measured at 857 reports/sec with the parameter set to 500Hz.
+  #
+  # ratbagd talks the vendor protocol instead and writes the rate into the
+  # mouse's onboard profile, where it survives reboots and this config alike:
+  #   ratbagctl "<device>" rate set 500
+  services.ratbagd.enable = true;
+
   programs.gamescope = {
     enable = true;
 
