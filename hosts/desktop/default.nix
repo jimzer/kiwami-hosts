@@ -103,6 +103,24 @@
   };
   hardware.graphics.enable32Bit = true;
 
+  # The monitor, at the rate it can actually do.
+  #
+  # An AOC U34G2G4R3: 3440x1440 ultrawide, 144Hz. Hyprland picked 59.97 on
+  # its own - the preferred mode the display advertises - so the panel ran at
+  # 40% of its refresh until this was written down.
+  #
+  # `output` is the field name, and getting it wrong is silent: hl.monitor
+  # accepts a table with `name` instead, returns ok, and ignores every other
+  # key. The mode string carries the rate after the @.
+  kiwami.hyprland.extraConfig = ''
+    hl.monitor{
+      output = "DP-2",
+      mode = "3440x1440@144",
+      position = "0x0",
+      scale = 1,
+    }
+  '';
+
   # gamescope: a micro-compositor that runs one game inside its own display.
   #
   # The game renders into a private virtual output and gamescope presents
