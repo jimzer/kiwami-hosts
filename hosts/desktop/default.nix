@@ -14,7 +14,10 @@ let
   # Steam end the session rather than leave an empty compositor. -e is Steam's
   # own flag for that side of the same arrangement.
   steamSession = pkgs.writeShellScriptBin "kiwami-steam-session" ''
-    exec ${pkgs.gamescope}/bin/gamescope \
+    # The wrapper, not the store path: capSysNice attaches the capability
+    # to /run/wrappers/bin/gamescope, and calling the store binary directly
+    # gets the uncapped one and the warning above.
+    exec /run/wrappers/bin/gamescope \
       --steam -W 3440 -H 1440 -r 144 -f \
       -- ${config.programs.steam.package}/bin/steam -gamepadui -steamos3
   '';
@@ -173,7 +176,20 @@ in
   #
   # Per-game, via Steam launch options, rather than globally:
   #   gamescope -W 3440 -H 1440 -r 144 -f -- %command%
-  programs.gamescope.enable = true;
+  programs.gamescope = {
+    enable = true;
+
+    # gamescope says so itself on startup when this is missing:
+    #
+    #   No CAP_SYS_NICE, falling back to regular-priority compute and
+    #   threads. Performance will be affected.
+    #
+    # It wants to renice its own compositing threads above everything else on
+    # the machine, which is rather the point of a compositor built for games.
+    # The capability arrives via a setcap wrapper, so the binary to run is
+    # /run/wrappers/bin/gamescope and not the store path.
+    capSysNice = true;
+  };
 
   # What the NVIDIA driver wants said out loud on Wayland.
   #
