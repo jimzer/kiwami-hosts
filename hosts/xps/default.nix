@@ -125,6 +125,38 @@
   services.jellyfin = {
     enable = true;
     openFirewall = true;
+
+    # Hardware transcoding, stated here rather than clicked in the dashboard.
+    #
+    # Without this Jellyfin reports HardwareAccelerationType "none" and
+    # transcodes on the CPU - which on a mobile i7 driving 4K is the
+    # difference between playing and not. The failure is silent: it simply
+    # uses the CPU and nobody is told.
+    hardwareAcceleration = {
+      enable = true;
+      type = "vaapi";
+      device = "/dev/dri/renderD128";
+    };
+
+    transcoding = {
+      enableHardwareEncoding = true;
+      # Whiskey Lake decodes these in hardware; AV1 it cannot, and an AV1
+      # file will fall back to the CPU however this is set.
+      hardwareDecodingCodecs = {
+        h264 = true;
+        hevc = true;
+        vp8 = true;
+        vp9 = true;
+      };
+      # Tone mapping for HDR into SDR clients. Expensive, and the usual
+      # reason a 4K HDR file stutters on something that cannot display HDR.
+      enableToneMapping = true;
+      enableIntelLowPowerEncoding = true;
+    };
+
+    # Apply the above on every start, so the configuration here is the truth
+    # rather than whatever was last clicked. It backs up encoding.xml first.
+    forceEncodingConfig = true;
   };
 
   # Hardware transcoding on the Intel chip. Whiskey Lake, so the iHD driver.
