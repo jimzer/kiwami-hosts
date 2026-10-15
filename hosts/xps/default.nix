@@ -162,6 +162,39 @@
   services.radarr.environmentFiles = [ "/var/lib/secrets/radarr.env" ];
   services.sonarr.environmentFiles = [ "/var/lib/secrets/sonarr.env" ];
   services.prowlarr.environmentFiles = [ "/var/lib/secrets/prowlarr.env" ];
+
+  # Make those files exist before anything reads them.
+  #
+  # systemd fails a unit whose EnvironmentFile is missing, so without this
+  # the three services would not start on a machine that had never been
+  # seeded - which is every fresh install. The keys are generated once and
+  # then left alone, so a rebuild never changes a key that something has
+  # already been configured with.
+  #
+  # An install can pre-seed these instead (nixos-anywhere --extra-files), in
+  # which case this finds them already present and does nothing. That is the
+  # path worth using: the keys are then known before the machine has booted
+  # once, and the stack can be configured over its APIs immediately.
+  systemd.services.servarr-secrets = {
+    description = "Generate API keys for the servarr services";
+    wantedBy = [ "multi-user.target" ];
+    before = [ "radarr.service" "sonarr.service" "prowlarr.service" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+    };
+    script = ''
+      install -d -m 700 /var/lib/secrets
+      for s in radarr sonarr prowlarr; do
+        f=/var/lib/secrets/$s.env
+        if [ ! -s "$f" ]; then
+          key=$(head -c 16 /dev/urandom | ${pkgs.coreutils}/bin/od -An -tx1 | tr -d " \n")
+          printf "%s__AUTH__APIKEY=%s\n" "$(echo "$s" | tr "[:lower:]" "[:upper:]")" "$key" > "$f"
+          chmod 600 "$f"
+        fi
+      done
+    '';
+  };
   services.radarr.enable = true;
   services.sonarr.enable = true;
   services.prowlarr.enable = true;
