@@ -448,6 +448,33 @@
   # itself is what broke - key-only, since PasswordAuthentication is off.
   networking.firewall.allowedTCPPorts = [ ];
 
+  # One exception: the living room TV box reaches Jellyfin over the LAN.
+  #
+  # It has to. Tailscale on that box tops out around 25 Mbit/s - it is a
+  # cheap ARM chip doing WireGuard in userspace, and that ceiling held
+  # whether it was on wifi or on ethernet. Over the plain LAN the same box
+  # sustains 119 Mbit/s, which is what a 98 Mbit/s 4K remux needs. So the
+  # tunnel is the bottleneck, not the radio.
+  #
+  # (Its ethernet port is 100 Mbit and measured *slower* than its wifi, so
+  # the cable is not the answer either.)
+  #
+  # Matched on MAC rather than IP: the address comes from DHCP and moving it
+  # would break playback mid-film, while the hardware addresses do not
+  # change. Both interfaces are listed - wifi first, then ethernet.
+  #
+  # This does put a Jellyfin login on the house network, which is the thing
+  # closing the firewall was meant to prevent. It is narrowed to one device,
+  # but the password should not stay trivial now that this exists.
+  networking.firewall.extraCommands = ''
+    iptables -I nixos-fw 1 -p tcp --dport 8096 -m mac --mac-source A8:71:16:8B:60:40 -j nixos-fw-accept
+    iptables -I nixos-fw 1 -p tcp --dport 8096 -m mac --mac-source 34:D8:56:F9:38:E9 -j nixos-fw-accept
+  '';
+  networking.firewall.extraStopCommands = ''
+    iptables -D nixos-fw -p tcp --dport 8096 -m mac --mac-source A8:71:16:8B:60:40 -j nixos-fw-accept || true
+    iptables -D nixos-fw -p tcp --dport 8096 -m mac --mac-source 34:D8:56:F9:38:E9 -j nixos-fw-accept || true
+  '';
+
   # [[ The machine itself ]]
 
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
