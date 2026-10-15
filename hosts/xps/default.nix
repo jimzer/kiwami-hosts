@@ -233,6 +233,137 @@
   services.sonarr.enable = true;
   services.prowlarr.enable = true;
 
+  # [[ The dashboard ]]
+  #
+  # http://xps, so nobody has to remember which of five ports a service is
+  # on. More than a list of links: the widgets talk to each service's API,
+  # so the page shows what is downloading, what is playing and how much of
+  # /stash is left.
+  #
+  # The keys come from an environment file rather than being written here.
+  # This repository is on GitHub and the nix store is world readable, so a
+  # key in `services` below would be published twice over. Homepage expands
+  # {{HOMEPAGE_VAR_X}} from its environment, and the environment comes from
+  # the same /var/lib/secrets the services themselves read.
+  services.homepage-dashboard = {
+    enable = true;
+    listenPort = 8082;
+    environmentFiles = [ "/var/lib/secrets/homepage.env" ];
+
+    # It refuses requests whose Host header it does not recognise, which is
+    # a sensible default and a confusing error when you have not set it.
+    allowedHosts = "xps,xps.tail2527fa.ts.net,100.92.38.81,localhost:8082";
+
+    settings = {
+      title = "xps";
+      theme = "dark";
+      headerStyle = "clean";
+      layout = [
+        { Media = { style = "row"; columns = 3; }; }
+        { Acquisition = { style = "row"; columns = 3; }; }
+      ];
+    };
+
+    services = [
+      {
+        Media = [
+          {
+            Jellyfin = {
+              href = "http://xps:8096";
+              description = "Films and series";
+              widget = {
+                type = "jellyfin";
+                url = "http://127.0.0.1:8096";
+                key = "{{HOMEPAGE_VAR_JELLYFIN_KEY}}";
+                enableBlocks = true;
+                enableNowPlaying = true;
+              };
+            };
+          }
+          {
+            Radarr = {
+              href = "http://xps:7878";
+              description = "Films";
+              widget = {
+                type = "radarr";
+                url = "http://127.0.0.1:7878";
+                key = "{{HOMEPAGE_VAR_RADARR_KEY}}";
+              };
+            };
+          }
+          {
+            Sonarr = {
+              href = "http://xps:8989";
+              description = "Series";
+              widget = {
+                type = "sonarr";
+                url = "http://127.0.0.1:8989";
+                key = "{{HOMEPAGE_VAR_SONARR_KEY}}";
+              };
+            };
+          }
+        ];
+      }
+      {
+        Acquisition = [
+          {
+            SABnzbd = {
+              href = "http://xps:8080";
+              description = "Downloads";
+              widget = {
+                type = "sabnzbd";
+                url = "http://127.0.0.1:8080";
+                key = "{{HOMEPAGE_VAR_SABNZBD_KEY}}";
+              };
+            };
+          }
+          {
+            Prowlarr = {
+              href = "http://xps:9696";
+              description = "Indexers";
+              widget = {
+                type = "prowlarr";
+                url = "http://127.0.0.1:9696";
+                key = "{{HOMEPAGE_VAR_PROWLARR_KEY}}";
+              };
+            };
+          }
+        ];
+      }
+    ];
+
+    widgets = [
+      {
+        resources = {
+          cpu = true;
+          memory = true;
+          disk = [ "/" "/stash" ];
+        };
+      }
+      {
+        search = {
+          provider = "duckduckgo";
+          target = "_blank";
+        };
+      }
+    ];
+  };
+
+  # Port 80, so the address is just http://xps.
+  #
+  # homepage-dashboard will not bind a privileged port itself, so something
+  # has to sit in front. nginx is the smallest thing that does.
+  services.nginx = {
+    enable = true;
+    recommendedProxySettings = true;
+    virtualHosts."xps" = {
+      default = true;
+      locations."/".proxyPass = "http://127.0.0.1:8082";
+    };
+  };
+
+  networking.firewall.allowedTCPPorts = [ 80 ];
+
   # [[ The machine itself ]]
 
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
