@@ -20,28 +20,28 @@
   boot.loader.efi.canTouchEfiVariables = true;
 
   networking.hostName = "xps";
-  networking.useDHCP = true;
-
   # Wifi, as a fallback for the cable.
   #
-  # The machine lives on ethernet; this is for moving it, or for the evening
-  # the router gets unplugged. wpa_supplicant rather than NetworkManager
-  # because there is exactly one network to join and nobody sitting at the
-  # machine to pick between them.
+  # NetworkManager rather than networking.wireless. The declarative route
+  # was tried first and was the wrong trade: it keeps the passphrase out of
+  # this repository, which matters for an API key and barely at all for a
+  # home wifi password, and in exchange it wants a PBKDF2 hash computed by
+  # hand, a secrets file readable by a service that runs as its own user,
+  # and a failure mode that says WRONG_KEY whichever of those is wrong.
   #
-  # The passphrase is not here. secretsFile holds it, in the same
-  # /var/lib/secrets as everything else, and pskRaw refers to it by name -
-  # so this file stays publishable and the key does not reach the nix store.
-  networking.wireless = {
+  # NetworkManager stores the connection under /var/lib/NetworkManager,
+  # which persists because this machine has no impermanence. So it is set
+  # once with nmcli and then it is simply true. The cost is that a reinstall
+  # needs it set again - a fair price for one network on a machine that
+  # lives on ethernet.
+  networking.networkmanager = {
     enable = true;
-    secretsFile = "/var/lib/secrets/wireless.conf";
-    networks."yallo_2452141".pskRaw = "ext:PSK_YALLO";
-    # Without this, wpa_supplicant refuses to start when the file names a
-    # network that is not in range - which is most of the time, since this
-    # machine is usually on a cable.
-    fallbackToWPA2 = true;
+    wifi.powersave = false;   # a server should not sleep its radio
   };
 
+  # useDHCP and NetworkManager both managing interfaces is a fight neither
+  # wins; NetworkManager does DHCP itself.
+  networking.useDHCP = false;
 
   time.timeZone = "Europe/Zurich";
   i18n.defaultLocale = "en_US.UTF-8";
@@ -403,7 +403,7 @@
 
   users.users.xps = {
     isNormalUser = true;
-    extraGroups = [ "wheel" "media" ];
+    extraGroups = [ "wheel" "media" "networkmanager" ];
 
     # A password in the configuration, so a fresh install is never a machine
     # nobody can log into. Three installs in a row left a console that
