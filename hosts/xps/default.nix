@@ -165,7 +165,20 @@
   # the library.
   hardware.graphics = {
     enable = true;
-    extraPackages = with pkgs; [ intel-media-driver vpl-gpu-rt ];
+    extraPackages = with pkgs; [
+      intel-media-driver
+      vpl-gpu-rt
+      # OpenCL, which is not optional here: tone mapping runs as
+      # tonemap_opencl, so without a runtime every HDR transcode dies with
+      # "Failed to get number of OpenCL platforms: -1001" and Jellyfin
+      # retries it forever. Decode and encode work without this; only HDR
+      # breaks, which is why it looks fine until a 4K file is played.
+      #
+      # legacy1, not intel-compute-runtime: the current one supports 12th
+      # Gen and newer, and this is Gen9.5. The wrong one installs happily
+      # and changes nothing.
+      intel-compute-runtime-legacy1
+    ];
   };
 
   # Jellyfin cannot open /dev/dri without video and render, and the failure
