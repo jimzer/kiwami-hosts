@@ -1,43 +1,51 @@
 # My machines.
 #
-# Kiwami is the distro; this is what is mine about these particular computers:
-# their names, their disks, their hardware, where they back up to. Kiwami has
-# no idea any of this exists, which is the point - it can be updated, or
-# forked, or handed to somebody else, without carrying my laptop with it.
+# They are not all the same kind of thing any more, and this file says so
+# rather than hiding it.
 #
-# Adding a machine is `kiwami install`, which scaffolds hosts/<name>/ and
-# offers to push it here. Nothing in this file has to be edited to register
-# it: the host list is the directory listing.
+# `desktop` is a Kiwami machine: it imports the distro and gets a desktop,
+# a shell, themes and the rest from one import.
+#
+# `xps` is plain NixOS. It stopped being a laptop and became a media server,
+# and almost nothing Kiwami provides is wanted on a headless box - so it
+# takes nixpkgs directly and declares the handful of services it runs.
+#
+# The host list used to be a directory listing, which was neat while every
+# machine was built the same way. It is written out now because they are not,
+# and a machine's builder is worth seeing.
 {
   description = "jimzer's machines";
 
   inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
+
     kiwami.url = "github:kiwamios/kiwami";
+
+    # Partitions from hosts/<name>/disk.nix. nixos-anywhere reads the same
+    # module to format a machine before installing it, which is why the
+    # layout lives in the repository rather than in an installer.
+    disko = {
+      url = "github:nix-community/disko";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = { self, kiwami, ... }:
-    let
-      hostNames = builtins.attrNames
-        (kiwami.inputs.nixpkgs.lib.filterAttrs
-          (_: t: t == "directory")
-          (builtins.readDir ./hosts));
-    in
+  outputs = { self, nixpkgs, kiwami, disko, ... }:
     {
-      # mkHost comes from Kiwami rather than being rebuilt here, so these
-      # machines are assembled exactly the way the distro's own test machines
-      # are. A recipe copied by hand is a recipe that drifts.
-      nixosConfigurations = kiwami.inputs.nixpkgs.lib.genAttrs hostNames
-        (name: kiwami.lib.mkHost [ (./hosts + "/${name}") ])
-        # An installer per machine, carrying that machine's whole built
-        # system, so a reinstall needs no network. `kiwami image` builds
-        # installer-<host> from this flake, so the attribute has to exist
-        # here - the image is of my machine, and my machines live here.
-        //
-        kiwami.inputs.nixpkgs.lib.genAttrs (map (n: "installer-${n}") hostNames)
-          (imageName:
-            kiwami.lib.installerFor
-              self.nixosConfigurations.${
-                kiwami.inputs.nixpkgs.lib.removePrefix "installer-" imageName
-              });
+      nixosConfigurations = {
+        # The distro's own machine.
+        desktop = kiwami.lib.mkHost [ ./hosts/desktop ];
+
+        # Plain NixOS. No Kiwami input reaches this one at all, which is the
+        # point: it can be rebuilt, reinstalled or handed over without the
+        # distro existing.
+        xps = nixpkgs.lib.nixosSystem {
+          system = "x86_64-linux";
+          modules = [
+            disko.nixosModules.disko
+            ./hosts/xps
+          ];
+        };
+      };
     };
 }

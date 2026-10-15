@@ -1,76 +1,164 @@
-# xps
+# xps - a Dell XPS 13 9380 that stopped being a laptop.
 #
-# Scaffolded by `kiwami install`. Everything here is a choice, not a fact -
-# edit it freely, then `nixos-rebuild switch --flake .#xps`.
+# It sits closed next to the router on ethernet and mains, and serves media.
+# No desktop, no greeter, no impermanence: this is plain NixOS with the
+# services it runs, and the whole configuration is this file plus disk.nix
+# and hardware.nix beside it.
 #
-# hardware.nix beside this file is the facts half, detected at install time.
-# Regenerate it with `kiwami doctor` if this machine's hardware changes.
-{ ... }:
+# Changing it: edit, commit, push, then on the machine
+#
+#   sudo nixos-rebuild switch --flake github:jimzer/kiwami-hosts#xps
+{ config, pkgs, lib, ... }:
 
 {
   imports = [
-    # Detected at install time. Do not edit; `kiwami doctor` diffs it against
-    # what this machine currently reports.
     ./hardware.nix
-    # The layout you chose. disko formats from it and fileSystems is derived
-    # from it, so the two cannot drift apart.
     ./disk.nix
   ];
 
-  # Short on purpose for now - long enough to look at, short enough to see it
-  # work. Raise it once the novelty wears off.
-  kiwami.wallpaper.rotate = true;
-  kiwami.wallpaper.interval = 10;
-
-  kiwami.flake = "github:jimzer/kiwami-hosts";
-  networking.hostName = "xps";
-
-  # The account the desktop belongs to. greetd logs this user in and its home
-  # carries the Hyprland and Quickshell config, so a mismatch here is quiet
-  # and total: the session comes up on Hyprland's own default config with no
-  # bar, because everything was installed for a different account.
-  kiwami.user = "kiwami";
-
-  # The root is wiped at every boot; only what kiwami.persist declares
-  # survives. disk.nix beside this makes the subvolumes that depend on.
-  kiwami.ephemeralRoot = true;
-
-  # The filesystem lives inside the LUKS container, so the rollback has to
-  # mount what comes out of it rather than the partition, which holds
-  # ciphertext. Without this the initrd would try to mount a LUKS blob as
-  # btrfs and the root would silently stop being wiped - or fail to boot.
-  kiwami.rootDevice = "/dev/mapper/cryptroot";
-
-  # Log the desktop user in with no password. Off deliberately: it suits a
-  # throwaway VM and not a laptop, where it means whoever opens the lid is
-  # you. Uncomment only if you know that is what you want.
-  # kiwami.autoLogin = true;
-
-  # /persist, encrypted, in R2. The prefix is what keeps one bucket usable for
-  # more than this machine: another host would be .../kiwami-<name> and a
-  # separate repository with its own passphrase, sharing nothing. restic has
-  # no per-host permissions inside a repository, so separate is the safer
-  # default even between machines you own.
-  kiwami.backup.enable = true;
-  kiwami.backup.repository =
-    "s3:https://4e11898df61f8103785b672c02504096.r2.cloudflarestorage.com/kiwami-backups/kiwami-xps";
-
   boot.loader.systemd-boot.enable = true;
-  # Without this systemd-boot never registers an NVRAM entry and the firmware
-  # boots something else, or nothing.
   boot.loader.efi.canTouchEfiVariables = true;
 
-  # The account itself comes from modules/common.nix, which reads
-  # kiwami.user above. The password is not set here: users are immutable, so
-  # the hash comes from kiwami.passwordFile, which activation seeds with the
-  # default and `kiwami passwd` replaces. Setting initialPassword as well is a
-  # conflict Nix only warns about, and the file wins - so the line would look
-  # like it set the password while doing nothing.
+  networking.hostName = "xps";
+  networking.useDHCP = true;
 
-  # When this machine was installed. Kiwami applies the desktop user's home
-  # configuration itself; this is the one part of it that belongs to the
-  # machine rather than to the distro.
-  home-manager.users.kiwami.home.stateVersion = "26.05";
+  time.timeZone = "Europe/Zurich";
+  i18n.defaultLocale = "en_US.UTF-8";
+
+  # [[ Never sleep ]]
+  #
+  # A closed lid is the normal state of this machine, not a request to
+  # suspend, and neither is an idle timeout. All four sleep modes are refused
+  # outright rather than merely not triggered, so nothing can ask politely
+  # and succeed.
+  services.logind.settings.Login = {
+    HandleLidSwitch = "ignore";
+    HandleLidSwitchDocked = "ignore";
+    HandleLidSwitchExternalPower = "ignore";
+  };
+
+  systemd.sleep.settings.Sleep = {
+    AllowSuspend = "no";
+    AllowHibernation = "no";
+    AllowHybridSleep = "no";
+    AllowSuspendThenHibernate = "no";
+  };
+
+  powerManagement.enable = false;
+
+  # Running closed and warm for years is what ages the battery, not the
+  # workload. Capping the charge is the cheap half of that; the other half is
+  # leaving the vents clear, which no amount of config can do.
+  services.thermald.enable = true;
+  services.tlp = {
+    enable = true;
+    settings.STOP_CHARGE_THRESH_BAT0 = 80;
+  };
+
+  # [[ Reaching it ]]
+  #
+  # Tailscale SSH rather than authorized_keys: the tailnet decides who
+  # connects, so there are no keys to distribute or rotate on a machine
+  # nobody sits at.
+  services.tailscale = {
+    enable = true;
+    extraUpFlags = [ "--ssh" ];
+  };
+
+  services.openssh = {
+    enable = true;
+    settings.PasswordAuthentication = false;
+  };
+
+  # [[ Media ]]
+  #
+  # The external SSD. nofail because a server that drops to emergency mode
+  # over an unplugged drive is worse than one serving nothing: the first
+  # cannot be fixed remotely, and the second can.
+  fileSystems."/stash" = {
+    device = "/dev/disk/by-label/stash";
+    fsType = "ext4";
+    options = [ "nofail" "noatime" ];
+  };
+
+  services.jellyfin = {
+    enable = true;
+    openFirewall = true;
+  };
+
+  # Hardware transcoding on the Intel chip. Whiskey Lake, so the iHD driver.
+  # It handles H.264 and HEVC and predates AV1 - an AV1 file falls back to
+  # the CPU, which on a mobile i7 is not worth attempting at 4K. Keep AV1 off
+  # the library.
+  hardware.graphics = {
+    enable = true;
+    extraPackages = with pkgs; [ intel-media-driver vpl-gpu-rt ];
+  };
+
+  # Jellyfin cannot open /dev/dri without these, and the failure is a silent
+  # fallback to CPU transcoding rather than an error.
+  users.users.jellyfin.extraGroups = [ "video" "render" ];
+
+  # The acquisition side. sabnzbd downloads, radarr and sonarr decide what to
+  # download and where to file it, prowlarr holds the indexer definitions so
+  # the other two are configured once.
+  #
+  # None of their real configuration lives here: indexers, API keys, root
+  # folders and quality profiles are in SQLite under /var/lib/<name>, because
+  # these apps were built around a web UI writing to a database. That is the
+  # part worth backing up, and the part an agent can drive over their REST
+  # APIs instead of anybody opening a browser.
+  # unrar is unfree - "unfreeRedistributable", so it may be shipped but not
+  # modified - and sabnzbd needs it because Usenet posts are RAR archives.
+  # Allowed by name rather than opening the gate with allowUnfree, so the
+  # next thing that wants an unfree licence has to say so too.
+  nixpkgs.config.allowUnfreePredicate =
+    pkg: builtins.elem (lib.getName pkg) [ "unrar" ];
+
+  services.sabnzbd.enable = true;
+  services.radarr.enable = true;
+  services.sonarr.enable = true;
+  services.prowlarr.enable = true;
+
+  # [[ The machine itself ]]
+
+  nix.settings.experimental-features = [ "nix-command" "flakes" ];
+
+  nix.gc = {
+    automatic = true;
+    dates = "weekly";
+    options = "--delete-older-than 30d";
+  };
+
+  nix.optimise.automatic = true;
+
+  # Otherwise the journal grows to a tenth of the disk and the first symptom
+  # is a rebuild that cannot complete.
+  services.journald.extraConfig = "SystemMaxUse=1G";
+
+  users.users.jimzer = {
+    isNormalUser = true;
+    extraGroups = [ "wheel" ];
+  };
+
+  security.sudo.wheelNeedsPassword = false;
+
+  # What is wanted at the end of an ssh connection, and nothing more. Plain
+  # nixpkgs neovim rather than a configured one: this machine is for editing
+  # a config file and reading a log, not for living in.
+  environment.systemPackages = with pkgs; [
+    neovim
+    git
+    curl
+    wget
+    htop
+    tmux
+    rsync
+    pciutils
+    usbutils
+  ];
+
+  environment.variables.EDITOR = "nvim";
 
   system.stateVersion = "26.05";
 }
