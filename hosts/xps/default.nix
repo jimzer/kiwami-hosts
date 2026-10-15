@@ -124,7 +124,15 @@
 
   services.jellyfin = {
     enable = true;
-    openFirewall = true;
+    # Deliberately not openFirewall. Everything here is reached over the
+    # tailnet, and tailscale accepts its own traffic before the NixOS
+    # firewall is consulted at all - INPUT jumps to ts-input first, which
+    # accepts anything arriving on tailscale0. So closing the ports shuts
+    # out the LAN and changes nothing for the tailnet.
+    #
+    # It matters because the Jellyfin password is deliberately trivial. The
+    # tailnet is the authentication; a login page on the house wifi is not.
+    openFirewall = false;
 
     # Hardware transcoding, stated here rather than clicked in the dashboard.
     #
@@ -434,7 +442,11 @@
     };
   };
 
-  networking.firewall.allowedTCPPorts = [ 80 ];
+  # Nothing opened to the LAN. nginx still binds 0.0.0.0:80, but only
+  # tailscale0 traffic reaches it, by the reasoning above. 22 stays open via
+  # services.openssh so there is a way in from the local network if tailscale
+  # itself is what broke - key-only, since PasswordAuthentication is off.
+  networking.firewall.allowedTCPPorts = [ ];
 
   # [[ The machine itself ]]
 
