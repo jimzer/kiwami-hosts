@@ -201,13 +201,18 @@
   systemd.services.servarr-secrets = {
     description = "Generate API keys for the servarr services";
     wantedBy = [ "multi-user.target" ];
-    before = [ "radarr.service" "sonarr.service" "prowlarr.service" ];
+    before = [ "radarr.service" "sonarr.service" "prowlarr.service" "sabnzbd.service" ];
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
     };
     script = ''
-      install -d -m 700 /var/lib/secrets
+      # 711, not 700. systemd reads an EnvironmentFile as root before it
+      # drops privileges, so the servarr apps do not care - but sabnzbd
+      # merges its own config as the sabnzbd user, and a directory it cannot
+      # traverse is reported as "not found", which is a confusing way to
+      # learn about a permission.
+      install -d -m 711 /var/lib/secrets
       for s in radarr sonarr prowlarr; do
         f=/var/lib/secrets/$s.env
         if [ ! -s "$f" ]; then
@@ -216,6 +221,12 @@
           chmod 600 "$f"
         fi
       done
+
+      # sabnzbd reads its own secrets file, so it has to own it.
+      if [ -e /var/lib/secrets/sabnzbd-secrets.ini ]; then
+        chown sabnzbd:sabnzbd /var/lib/secrets/sabnzbd-secrets.ini
+        chmod 600 /var/lib/secrets/sabnzbd-secrets.ini
+      fi
     '';
   };
   services.radarr.enable = true;
