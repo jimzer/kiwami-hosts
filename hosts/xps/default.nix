@@ -22,6 +22,27 @@
   networking.hostName = "xps";
   networking.useDHCP = true;
 
+  # Wifi, as a fallback for the cable.
+  #
+  # The machine lives on ethernet; this is for moving it, or for the evening
+  # the router gets unplugged. wpa_supplicant rather than NetworkManager
+  # because there is exactly one network to join and nobody sitting at the
+  # machine to pick between them.
+  #
+  # The passphrase is not here. secretsFile holds it, in the same
+  # /var/lib/secrets as everything else, and pskRaw refers to it by name -
+  # so this file stays publishable and the key does not reach the nix store.
+  networking.wireless = {
+    enable = true;
+    secretsFile = "/var/lib/secrets/wireless.conf";
+    networks."yallo_2452141".pskRaw = "ext:PSK_YALLO";
+    # Without this, wpa_supplicant refuses to start when the file names a
+    # network that is not in range - which is most of the time, since this
+    # machine is usually on a cable.
+    fallbackToWPA2 = true;
+  };
+
+
   time.timeZone = "Europe/Zurich";
   i18n.defaultLocale = "en_US.UTF-8";
 
@@ -407,6 +428,7 @@
   # nixpkgs neovim rather than a configured one: this machine is for editing
   # a config file and reading a log, not for living in.
   environment.systemPackages = with pkgs; [
+    iw          # so the next person to debug wifi can actually scan
     neovim
     git
     curl
