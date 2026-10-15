@@ -249,15 +249,22 @@
   # is a rebuild that cannot complete.
   services.journald.extraConfig = "SystemMaxUse=1G";
 
-  users.users.jimzer = {
+  users.users.xps = {
     isNormalUser = true;
     extraGroups = [ "wheel" "media" ];
 
-    # Belt and braces. Tailscale SSH is the normal way in, but it only works
-    # once tailscaled has an identity - and a fresh install has none until
-    # somebody authenticates it. A machine reachable only through the thing
-    # that is not yet set up is a machine nobody can reach, which is how the
-    # last install nearly went.
+    # A password in the configuration, so a fresh install is never a machine
+    # nobody can log into. Three installs in a row left a console that
+    # rejected everything, because the only way in was Tailscale SSH and a
+    # fresh install has no tailnet identity until somebody authenticates it.
+    #
+    # initialHashedPassword rather than hashedPassword: it applies when the
+    # account is created and `passwd` wins afterwards, so changing it on the
+    # machine is not quietly reverted by the next rebuild.
+    initialHashedPassword = "$6$nFt5jXC8fDwRPDLn$QIw2F7hsKrwuZNVVbaLDbQvuS3xwg4lTWTS8.JWIOBhNzoK1YoqjsEy7OXhua4sFR5Hh0oHxlns40H6qXYcUt.";
+
+    # Belt and braces for the same problem. Tailscale SSH is the normal way
+    # in, and this is what works when tailscaled has nothing to say yet.
     openssh.authorizedKeys.keys = [
       "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCfo/AgwaTtwll3gj2IH76Ytuehwku/6IRVsoB4coFKHpGI4MQSpiOGObwXA/o9WlgnkyivQ86puWFB6SvN6cqVpVt3ol5g+wxnXUXX3N84stLggjAS6KyfuB3qN7JOFqcHFrLHdO2/6wCSIDjoQJfMJ7V2TMIOPZNXU4hg1gZ6LT8kxK0comu0AI0txax+KO6Q+SudzGrZwKWm0Oi3AU01+l4ItW4dId2DXvzKqhOyspKQYm4F8ZXToFx5kM5kUe3e5mx0Kqd3ryOROlRPSUiiprlL6iQTTCDKRXZ5AhoLpHGIvGVr/AIN1U7l/GcR3KcwK1qCh4VY8ole+PB+5CVQqgnKDW+Z5PL7PtEbiowAgFE5fYWR/acwjFijIxAHss37cr/L8eKTnLp2Psbr0gDRXNHvzUyN3SwPsO1yzslg6NwA1DcnM8hD4nCMd+MT2TeEc+uZafc6mgkV6kJcEgmza0+awVvsUvNWHFI9j5v/8JxnmQEGsIh0UxwN4XOZxJs= jimzer@jimis-macbook-pro.home"
     ];
