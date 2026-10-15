@@ -151,7 +151,13 @@
       # Tone mapping for HDR into SDR clients. Expensive, and the usual
       # reason a 4K HDR file stutters on something that cannot display HDR.
       enableToneMapping = true;
-      enableIntelLowPowerEncoding = true;
+      # Off, though the documentation recommends it for Gen9 and newer. The
+      # low-power encode block on Whiskey Lake only does constant-QP rate
+      # control, and Jellyfin asks for VBR with a target bitrate, so the
+      # encoder refuses to open at all:
+      #   Driver does not support VBR RC mode (supported modes: CQP)
+      # The result is no transcode rather than a slower one.
+      enableIntelLowPowerEncoding = false;
     };
 
     # Apply the above on every start, so the configuration here is the truth
