@@ -139,7 +139,30 @@
   nixpkgs.config.allowUnfreePredicate =
     pkg: builtins.elem (lib.getName pkg) [ "unrar" ];
 
-  services.sabnzbd.enable = true;
+  services.sabnzbd = {
+    enable = true;
+
+    # Unlike the servarr apps, sabnzbd's config is an ini file the module
+    # owns outright, and it takes its secrets from a separate file that is
+    # merged over the top. So the key is declarative here in the sense that
+    # matters: it is known before the service starts, without being in git
+    # or in the store.
+    secretFiles = [ "/var/lib/secrets/sabnzbd-secrets.ini" ];
+
+    # The module writes the config read-only so this file stays the single
+    # source of truth. Left that way deliberately: anything set through the
+    # web interface would be silently reverted on the next rebuild, which is
+    # a worse surprise than not being able to set it there at all.
+    settings = {
+      misc = {
+        host = "0.0.0.0";
+        # Downloads land on the media drive, not the system disk - 476G of
+        # root would otherwise fill up behind a single season.
+        download_dir = "/stash/Temp/.incomplete";
+        complete_dir = "/stash/Temp";
+      };
+    };
+  };
 
   # API keys from a file outside the store.
   #
