@@ -122,6 +122,21 @@
   # group that exists.
   users.groups.media.gid = 985;
 
+  # The staging drive: the 500G Samsung T5 that was the installer stick until
+  # there was a SanDisk to take over. Everything on it is undecided - things
+  # downloaded but not yet promoted into the permanent library - which makes
+  # it the one drive here that can be reformatted without a conversation.
+  #
+  # ext4, not exfat like /stash, because nothing plugs this one into a Mac.
+  # That buys real Unix permissions, so the group is set by setgid bits on
+  # the directories rather than by a mount option, and macOS cannot litter
+  # it with AppleDouble files.
+  fileSystems."/staging" = {
+    device = "/dev/disk/by-uuid/e16cfe77-c40f-4730-b444-b63e87f9dfe4";
+    fsType = "ext4";
+    options = [ "nofail" "noatime" ];
+  };
+
   services.jellyfin = {
     enable = true;
     # Deliberately not openFirewall. Everything here is reached over the
@@ -528,6 +543,8 @@
     rsync
     pciutils
     usbutils
+    sqlite      # jellyfin, radarr and sonarr all keep their state in sqlite,
+                # and jellyfin has no way to drop a stale row through its API
   ];
 
   environment.variables.EDITOR = "nvim";
