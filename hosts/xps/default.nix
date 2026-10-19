@@ -2,8 +2,12 @@
 #
 # It sits closed next to the router on ethernet and mains, and serves media.
 # No desktop, no greeter, no impermanence: this is plain NixOS with the
-# services it runs, and the whole configuration is this file plus disk.nix
-# and hardware.nix beside it.
+# services it runs, and the whole configuration is this file plus disk.nix,
+# hardware.nix and session.nix beside it.
+#
+# session.nix is the one thing here that is not a service: a compositor and a
+# browser for the laptop's own screen, for the times this is the only machine
+# in the room. Nothing in it starts on its own.
 #
 # Changing it: edit, commit, push, then on the machine
 #
@@ -14,6 +18,7 @@
   imports = [
     ./hardware.nix
     ./disk.nix
+    ./session.nix
   ];
 
   boot.loader.systemd-boot.enable = true;
