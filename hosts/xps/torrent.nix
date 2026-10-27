@@ -46,10 +46,16 @@
     # 100.64.0.0/10 is the range tailscale assigns. The LAN is here because
     # the firewall already refuses it, so this grants nothing on its own and
     # saves a confusing second edit if that ever changes.
+    #
+    # The veth subnet 192.168.15.0/24 is deliberately absent. Each entry
+    # becomes a route via the bridge, and that one is already connected -
+    # the namespace end of the veth holds 192.168.15.1/24. Adding it fails
+    # with "RTNETLINK answers: File exists", and the script runs under
+    # errexit, so the whole namespace fails to come up. The host reaches the
+    # client over that subnet regardless; it needs no route to do it.
     accessibleFrom = [
       "100.64.0.0/10"
       "192.168.1.0/24"
-      "192.168.15.0/24"
     ];
 
     # Host port to namespace port, so radarr and sonarr - which live in the
