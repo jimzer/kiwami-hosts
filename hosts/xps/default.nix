@@ -3,11 +3,15 @@
 # It sits closed next to the router on ethernet and mains, and serves media.
 # No desktop, no greeter, no impermanence: this is plain NixOS with the
 # services it runs, and the whole configuration is this file plus disk.nix,
-# hardware.nix and session.nix beside it.
+# hardware.nix, session.nix and torrent.nix beside it.
 #
 # session.nix is the one thing here that is not a service: a compositor and a
 # browser for the laptop's own screen, for the times this is the only machine
 # in the room. Nothing in it starts on its own.
+#
+# torrent.nix is the acquisition side's other half, kept separate because it
+# is the only thing here that must not use the house line: a torrent client
+# confined to a network namespace whose only route out is a VPN tunnel.
 #
 # Changing it: edit, commit, push, then on the machine
 #
@@ -19,6 +23,7 @@
     ./hardware.nix
     ./disk.nix
     ./session.nix
+    ./torrent.nix
   ];
 
   boot.loader.systemd-boot.enable = true;

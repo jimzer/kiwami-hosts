@@ -28,9 +28,16 @@
       url = "github:nix-community/disko";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    # qBittorrent runs in a network namespace whose only route out is a
+    # WireGuard tunnel, so torrent traffic cannot take the house line. The
+    # module builds the namespace, the tunnel and the veth back to the host,
+    # and handles the two things that are easy to get wrong by hand: the
+    # resolver inside the namespace, and the tunnel MTU.
+    vpn-confinement.url = "github:Maroka-chan/VPN-Confinement";
   };
 
-  outputs = { self, nixpkgs, kiwami, disko, ... }:
+  outputs = { self, nixpkgs, kiwami, disko, vpn-confinement, ... }:
     {
       nixosConfigurations = {
         # The distro's own machine.
@@ -43,6 +50,7 @@
           system = "x86_64-linux";
           modules = [
             disko.nixosModules.disko
+            vpn-confinement.nixosModules.default
             ./hosts/xps
           ];
         };
